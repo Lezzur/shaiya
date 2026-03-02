@@ -1,5 +1,5 @@
 import { db } from './db';
-import { ActivityModule } from '@/generated/prisma';
+import { ActivityModule, Prisma } from '@/generated/prisma';
 
 /**
  * Activity logging helper
@@ -43,7 +43,7 @@ export async function logActivity({
       action,
       entityType,
       entityId,
-      metadata: metadata || null,
+      metadata: metadata ? (metadata as Prisma.InputJsonValue) : undefined,
     },
   });
 }
@@ -60,7 +60,7 @@ export async function logActivities(activities: LogActivityParams[]) {
       action: activity.action,
       entityType: activity.entityType,
       entityId: activity.entityId,
-      metadata: activity.metadata || null,
+      metadata: activity.metadata ? (activity.metadata as Prisma.InputJsonValue) : undefined,
     })),
   });
 }

@@ -162,7 +162,7 @@ export const createContentAssetSchema = z.object({
   clientStatus: z.nativeEnum(ClientStatus).default(ClientStatus.PENDING),
   version: z.number().int().positive().default(1),
   parentAssetId: uuidSchema.optional(),
-  metadata: z.record(z.unknown()).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
 });
 
 export const updateContentAssetSchema = createContentAssetSchema.partial().omit({
@@ -185,7 +185,7 @@ export const createAssetVersionSchema = z.object({
   parentAssetId: uuidSchema,
   fileUrl: urlSchema,
   thumbnailUrl: urlSchema.optional(),
-  metadata: z.record(z.unknown()).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
 });
 
 // =============================================================================
@@ -214,7 +214,7 @@ export const createActivityLogSchema = z.object({
   action: z.string().min(1, 'Action is required'),
   entityType: z.string().min(1, 'Entity type is required'),
   entityId: uuidSchema,
-  metadata: z.record(z.unknown()).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
 });
 
 // =============================================================================

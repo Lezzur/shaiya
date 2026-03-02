@@ -45,12 +45,12 @@ const envSchema = z.object({
   // Feature flags
   ENABLE_ANALYTICS: z
     .string()
-    .transform((val) => val === 'true')
-    .default('false'),
+    .default('false')
+    .transform((val) => val === 'true'),
   ENABLE_EMAIL_NOTIFICATIONS: z
     .string()
-    .transform((val) => val === 'true')
-    .default('false'),
+    .default('false')
+    .transform((val) => val === 'true'),
 });
 
 /**
@@ -76,7 +76,7 @@ export function getEnv(): Env {
     return _env;
   } catch (error) {
     if (error instanceof z.ZodError) {
-      const missingVars = error.errors
+      const missingVars = error.issues
         .map((err) => `  - ${err.path.join('.')}: ${err.message}`)
         .join('\n');
 
