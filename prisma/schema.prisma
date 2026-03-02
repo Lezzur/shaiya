@@ -1,0 +1,296 @@
+// Prisma schema for Content Agency V1
+// https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// =============================================================================
+// ENUMS
+// =============================================================================
+
+enum UserRole {
+  ADMIN
+  TEAM
+  CLIENT
+}
+
+enum AuthMethod {
+  PASSWORD
+  MAGIC_LINK
+}
+
+enum HealthStatus {
+  HEALTHY
+  AT_RISK
+  CHURNED
+}
+
+enum ContentAssetType {
+  SOCIAL_POST
+  BLOG
+  VIDEO
+  ILLUSTRATION
+  CAROUSEL
+  STORY
+  REEL
+  OTHER
+}
+
+enum InternalStatus {
+  DRAFT
+  QA_PASSED
+  SENT_TO_CLIENT
+}
+
+enum ClientStatus {
+  PENDING
+  APPROVED
+  REVISION_REQUESTED
+  DONE
+}
+
+enum ActivityModule {
+  LEAD_ENGINE
+  OPS_DESK
+  CONTENT_ENGINE
+  CLIENT_PORTAL
+  PROPOSALS
+  ANALYTICS
+  WEBSITE
+  SYSTEM
+}
+
+enum ProjectStatus {
+  BRIEFING
+  ASSET_PREP
+  IN_PRODUCTION
+  INTERNAL_REVIEW
+  CLIENT_REVIEW
+  REVISION
+  APPROVED
+  DELIVERED
+}
+
+enum DeliverableStatus {
+  PENDING_D
+  IN_PROGRESS_D
+  DONE_D
+}
+
+enum CommentEntityType {
+  PROJECT
+  CONTENT_ASSET
+  PROPOSAL
+  BRAND_PROFILE
+  CLIENT_MESSAGE
+}
+
+enum InvoiceStatus {
+  DRAFT_I
+  SENT_I
+  PAID
+  OVERDUE
+  CANCELLED
+}
+
+// =============================================================================
+// CORE TABLES
+// =============================================================================
+
+model User {
+  id           String     @id @default(uuid())
+  email        String     @unique
+  name         String
+  role         UserRole
+  avatar       String?
+  capacity     Int?
+  skills       String[]
+  authMethod   AuthMethod @map("auth_method")
+  passwordHash String?    @map("password_hash")
+  clientId     String?    @map("client_id")
+  createdAt    DateTime   @default(now()) @map("created_at")
+  updatedAt    DateTime   @updatedAt @map("updated_at")
+
+  // Relations
+  client              Client?        @relation("UserClient", fields: [clientId], references: [id], onDelete: SetNull)
+  primaryContactFor   Client[]       @relation("ClientPrimaryContact")
+  assignedProjects    Project[]      @relation("ProjectAssignee")
+  authoredComments    Comment[]      @relation("CommentAuthor")
+  activityLogs        ActivityLog[]  @relation("ActivityActor")
+
+  @@index([role])
+  @@index([clientId])
+  @@map("users")
+}
+
+model Client {
+  id               String       @id @default(uuid())
+  name             String
+  logo             String?
+  industry         String?
+  packageTier      String?      @map("package_tier")
+  monthlyValue     Decimal      @default(0) @map("monthly_value") @db.Decimal(10, 2)
+  lifetimeValue    Decimal      @default(0) @map("lifetime_value") @db.Decimal(10, 2)
+  primaryContactId String?      @map("primary_contact_id")
+  healthStatus     HealthStatus @default(HEALTHY) @map("health_status")
+  renewalDate      DateTime?    @map("renewal_date")
+  r2BucketPath     String?      @map("r2_bucket_path")
+  createdAt        DateTime     @default(now()) @map("created_at")
+  updatedAt        DateTime     @updatedAt @map("updated_at")
+
+  // Relations
+  primaryContact User?          @relation("ClientPrimaryContact", fields: [primaryContactId], references: [id], onDelete: SetNull)
+  users          User[]         @relation("UserClient")
+  contentAssets  ContentAsset[] @relation("ClientContentAssets")
+  projects       Project[]      @relation("ClientProjects")
+  invoices       Invoice[]      @relation("ClientInvoices")
+
+  @@index([healthStatus])
+  @@map("clients")
+}
+
+model ContentAsset {
+  id              String           @id @default(uuid())
+  clientId        String           @map("client_id")
+  projectId       String?          @map("project_id")
+  generationJobId String?          @map("generation_job_id")
+  type            ContentAssetType
+  fileUrl         String           @map("file_url")
+  thumbnailUrl    String?          @map("thumbnail_url")
+  internalStatus  InternalStatus   @default(DRAFT) @map("internal_status")
+  clientStatus    ClientStatus     @default(PENDING) @map("client_status")
+  version         Int              @default(1)
+  parentAssetId   String?          @map("parent_asset_id")
+  metadata        Json?
+  createdAt       DateTime         @default(now()) @map("created_at")
+  updatedAt       DateTime         @updatedAt @map("updated_at")
+
+  // Relations
+  client       Client        @relation("ClientContentAssets", fields: [clientId], references: [id], onDelete: Cascade)
+  project      Project?      @relation("ProjectContentAssets", fields: [projectId], references: [id], onDelete: SetNull)
+  parentAsset  ContentAsset? @relation("AssetVersions", fields: [parentAssetId], references: [id], onDelete: SetNull)
+  childAssets  ContentAsset[] @relation("AssetVersions")
+  deliverables Deliverable[] @relation("DeliverableAsset")
+
+  @@index([clientId])
+  @@index([internalStatus])
+  @@index([clientStatus])
+  @@map("content_assets")
+}
+
+model ActivityLog {
+  id         String         @id @default(uuid())
+  timestamp  DateTime       @default(now())
+  actorId    String         @map("actor_id")
+  module     ActivityModule
+  action     String
+  entityType String         @map("entity_type")
+  entityId   String         @map("entity_id")
+  metadata   Json?
+
+  // Relations
+  actor User @relation("ActivityActor", fields: [actorId], references: [id], onDelete: Cascade)
+
+  @@index([timestamp(sort: Desc)])
+  @@index([entityType, entityId])
+  @@index([module])
+  @@map("activity_log")
+}
+
+// =============================================================================
+// OPS DESK TABLES
+// =============================================================================
+
+model Project {
+  id                 String        @id @default(uuid())
+  clientId           String        @map("client_id")
+  title              String
+  brief              String?       @db.Text
+  status             ProjectStatus @default(BRIEFING)
+  deadline           DateTime?
+  assignedToId       String?       @map("assigned_to_id")
+  templateId         String?       @map("template_id")
+  timeTrackedMinutes Int           @default(0) @map("time_tracked_minutes")
+  createdAt          DateTime      @default(now()) @map("created_at")
+  updatedAt          DateTime      @updatedAt @map("updated_at")
+
+  // Relations
+  client        Client         @relation("ClientProjects", fields: [clientId], references: [id], onDelete: Cascade)
+  assignedTo    User?          @relation("ProjectAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
+  contentAssets ContentAsset[] @relation("ProjectContentAssets")
+  deliverables  Deliverable[]  @relation("ProjectDeliverables")
+  invoices      Invoice[]      @relation("ProjectInvoices")
+
+  @@index([clientId])
+  @@index([status])
+  @@index([assignedToId])
+  @@index([deadline])
+  @@map("projects")
+}
+
+model Deliverable {
+  id             String            @id @default(uuid())
+  projectId      String            @map("project_id")
+  title          String
+  status         DeliverableStatus @default(PENDING_D)
+  order          Int
+  contentAssetId String?           @map("content_asset_id")
+  createdAt      DateTime          @default(now()) @map("created_at")
+  updatedAt      DateTime          @updatedAt @map("updated_at")
+
+  // Relations
+  project      Project       @relation("ProjectDeliverables", fields: [projectId], references: [id], onDelete: Cascade)
+  contentAsset ContentAsset? @relation("DeliverableAsset", fields: [contentAssetId], references: [id], onDelete: SetNull)
+
+  @@map("deliverables")
+}
+
+model Comment {
+  id         String            @id @default(uuid())
+  entityType CommentEntityType @map("entity_type")
+  entityId   String            @map("entity_id")
+  authorId   String            @map("author_id")
+  body       String            @db.Text
+  parentId   String?           @map("parent_id")
+  createdAt  DateTime          @default(now()) @map("created_at")
+
+  // Relations
+  author        User      @relation("CommentAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  parentComment Comment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: SetNull)
+  replies       Comment[] @relation("CommentReplies")
+
+  @@index([entityType, entityId])
+  @@map("comments")
+}
+
+model Invoice {
+  id                     String        @id @default(uuid())
+  clientId               String        @map("client_id")
+  projectId              String?       @map("project_id")
+  amount                 Decimal       @db.Decimal(10, 2)
+  status                 InvoiceStatus @default(DRAFT_I)
+  dueDate                DateTime      @map("due_date")
+  paidAt                 DateTime?     @map("paid_at")
+  paymongoPaymentLinkId  String?       @map("paymongo_payment_link_id")
+  paymongoPaymentLinkUrl String?       @map("paymongo_payment_link_url")
+  paymongoPaymentId      String?       @map("paymongo_payment_id")
+  lineItems              Json          @map("line_items")
+  notes                  String?       @db.Text
+  createdAt              DateTime      @default(now()) @map("created_at")
+  updatedAt              DateTime      @updatedAt @map("updated_at")
+
+  // Relations
+  client  Client   @relation("ClientInvoices", fields: [clientId], references: [id], onDelete: Cascade)
+  project Project? @relation("ProjectInvoices", fields: [projectId], references: [id], onDelete: SetNull)
+
+  @@index([clientId])
+  @@index([status])
+  @@index([dueDate])
+  @@map("invoices")
+}
