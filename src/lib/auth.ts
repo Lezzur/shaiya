@@ -14,6 +14,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       credentials: {
         email: { label: 'Email', type: 'email' },
         password: { label: 'Password', type: 'password' },
+        rememberMe: { label: 'Remember me', type: 'checkbox' },
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
@@ -22,7 +23,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
         const email = credentials.email as string;
         const password = credentials.password as string;
-        const rememberMe = credentials.rememberMe === "true";
+        const rememberMe = (credentials.rememberMe as string | undefined) === "true";
 
         const user = await db.user.findUnique({
           where: { email },

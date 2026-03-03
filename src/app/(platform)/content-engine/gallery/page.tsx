@@ -49,6 +49,7 @@ interface ContentAsset {
   internalStatus: InternalStatus;
   clientStatus: string;
   createdAt: string;
+  version: number;
   client: Client;
   project?: {
     id: string;
@@ -58,7 +59,7 @@ interface ContentAsset {
     id: string;
     status: string;
   } | null;
-  metadata?: any;
+  metadata?: Record<string, unknown>;
 }
 
 interface PaginatedResponse {

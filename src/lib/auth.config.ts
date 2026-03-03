@@ -1,6 +1,36 @@
 import type { NextAuthConfig } from 'next-auth';
 
+const isProduction = process.env.NODE_ENV === 'production';
+
 export const authConfig = {
+  cookies: {
+    csrfToken: {
+      name: 'authjs.csrf-token',
+      options: {
+        httpOnly: true,
+        sameSite: 'lax' as const,
+        path: '/',
+        secure: isProduction,
+      },
+    },
+    callbackUrl: {
+      name: 'authjs.callback-url',
+      options: {
+        sameSite: 'lax' as const,
+        path: '/',
+        secure: isProduction,
+      },
+    },
+    sessionToken: {
+      name: isProduction ? '__Secure-authjs.session-token' : 'authjs.session-token',
+      options: {
+        httpOnly: true,
+        sameSite: 'lax' as const,
+        path: '/',
+        secure: isProduction,
+      },
+    },
+  },
   session: {
     strategy: 'jwt',
     maxAge: 30 * 24 * 60 * 60, // 30 days (for "remember me")

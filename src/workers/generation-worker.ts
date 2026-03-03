@@ -1,5 +1,5 @@
 import { Worker, Job } from 'bullmq';
-import { redis, GenerationJobPayload } from '@/lib/queue';
+import { redisConnection, GenerationJobPayload } from '@/lib/queue';
 import { db } from '@/lib/db';
 import { GenerationJobStatus, ActivityModule } from '@/generated/prisma';
 
@@ -170,7 +170,7 @@ export function startWorker(): Worker<GenerationJobPayload> {
   }
 
   worker = new Worker<GenerationJobPayload>('generation', processGenerationJob, {
-    connection: redis,
+    connection: redisConnection,
     concurrency: 5, // As per spec: content-generation queue has concurrency 5
   });
 

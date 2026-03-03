@@ -59,16 +59,16 @@ export function broadcastJobUpdate(job: unknown): void {
   const encoded = encoder.encode(message);
 
   // Broadcast to all connections
-  for (const controllers of activeConnections.values()) {
-    for (const controller of controllers) {
+  Array.from(activeConnections.values()).forEach(controllers => {
+    Array.from(controllers).forEach(controller => {
       try {
         controller.enqueue(encoded);
       } catch (error) {
         // Broken connection - will be cleaned up on next abort signal
         console.error('Failed to enqueue SSE message:', error);
       }
-    }
-  }
+    });
+  });
 }
 
 /**
@@ -76,9 +76,9 @@ export function broadcastJobUpdate(job: unknown): void {
  */
 export function getActiveConnectionCount(): number {
   let count = 0;
-  for (const controllers of activeConnections.values()) {
+  Array.from(activeConnections.values()).forEach(controllers => {
     count += controllers.size;
-  }
+  });
   return count;
 }
 
@@ -96,11 +96,11 @@ export function sendToConnection(connectionId: string, data: unknown): void {
   const encoder = new TextEncoder();
   const encoded = encoder.encode(message);
 
-  for (const controller of controllers) {
+  Array.from(controllers).forEach(controller => {
     try {
       controller.enqueue(encoded);
     } catch (error) {
       console.error('Failed to send to connection:', error);
     }
-  }
+  });
 }

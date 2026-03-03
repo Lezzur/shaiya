@@ -117,7 +117,7 @@ export const POST = withAuth(
               pipelineId: id,
               clientId,
               brandProfileId,
-              params,
+              params: params as object,
               status: GenerationJobStatus.QUEUED,
             },
           });
@@ -128,8 +128,7 @@ export const POST = withAuth(
             pipelineId: id,
             clientId,
             brandProfileId,
-            webhookUrl: pipeline.webhookUrl,
-            params,
+            params: params as Record<string, unknown>,
           });
 
           // Update pipeline statistics

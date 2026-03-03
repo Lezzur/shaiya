@@ -8,6 +8,14 @@ export default auth((req) => {
   const { pathname } = req.nextUrl;
   const session = req.auth;
 
+  // Redirect HTTP to HTTPS in production
+  const proto = req.headers.get('x-forwarded-proto');
+  if (proto === 'http' && process.env.NODE_ENV === 'production') {
+    const httpsUrl = new URL(req.nextUrl.toString());
+    httpsUrl.protocol = 'https:';
+    return NextResponse.redirect(httpsUrl, 301);
+  }
+
   // Public paths - no auth required
   if (
     pathname.startsWith('/(auth)') ||

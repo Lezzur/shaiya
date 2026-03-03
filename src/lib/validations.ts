@@ -309,6 +309,23 @@ export const updateBrandProfileSchema = createBrandProfileSchema.partial().omit(
 });
 
 // =============================================================================
+// PROMPT TEMPLATE SCHEMAS
+// =============================================================================
+
+export const createPromptSchema = z.object({
+  pipelineId: uuidSchema.optional(),
+  contentType: z.string().min(1, 'Content type is required'),
+  body: z.string().min(1, 'Prompt body is required'),
+  version: z.number().int().positive().default(1),
+  performanceNotes: z.string().optional(),
+  abNotes: z.string().optional(),
+  isActive: z.boolean().default(true),
+  category: z.string().optional(),
+});
+
+export const updatePromptSchema = createPromptSchema.partial();
+
+// =============================================================================
 // MODEL REGISTRY SCHEMAS
 // =============================================================================
 
@@ -354,3 +371,5 @@ export type CreateBrandProfile = z.infer<typeof createBrandProfileSchema>;
 export type UpdateBrandProfile = z.infer<typeof updateBrandProfileSchema>;
 export type CreateModel = z.infer<typeof createModelSchema>;
 export type UpdateModel = z.infer<typeof updateModelSchema>;
+export type CreatePrompt = z.infer<typeof createPromptSchema>;
+export type UpdatePrompt = z.infer<typeof updatePromptSchema>;

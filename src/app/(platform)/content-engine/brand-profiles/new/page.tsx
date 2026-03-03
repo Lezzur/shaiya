@@ -60,10 +60,10 @@ export default function NewBrandProfilePage() {
     }
   };
 
-  const validateJSON = (value: string, field: string) => {
-    if (!value.trim() || value.trim() === "{}") return true;
+  const validateJSON = (_value: string, _field: string) => {
+    if (!_value.trim() || _value.trim() === "{}") return true;
     try {
-      JSON.parse(value);
+      JSON.parse(_value);
       return true;
     } catch {
       return false;
@@ -358,10 +358,14 @@ export default function NewBrandProfilePage() {
               </div>
             )}
             <FileUploader
-              clientId={clientId}
-              onUploadComplete={handleFileUpload}
-              maxFiles={10}
-              disabled={!clientId || isLoading}
+              onUpload={async (files) => {
+                // TODO: Implement actual file upload to R2
+                // For now, create object URLs for preview
+                const urls = files.map(f => URL.createObjectURL(f));
+                handleFileUpload(urls);
+              }}
+              accept="image/*"
+              multiple={true}
             />
             {!clientId && (
               <p className="text-sm text-muted-foreground">

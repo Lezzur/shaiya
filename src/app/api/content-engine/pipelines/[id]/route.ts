@@ -123,7 +123,7 @@ export const PATCH = withAuth(
           name: data.name,
           type: data.type,
           webhookUrl: data.webhookUrl,
-          config: data.config,
+          config: data.config as object | undefined,
           status: data.status,
         },
       });

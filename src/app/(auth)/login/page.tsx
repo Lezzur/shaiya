@@ -106,6 +106,7 @@ export default function LoginPage() {
                   onChange={(e) => setRememberMe(e.target.checked)}
                   disabled={loading}
                   className="h-4 w-4 rounded border-zinc-300 text-zinc-900 focus:ring-zinc-500"
+                  suppressHydrationWarning
                 />
                 <Label htmlFor="rememberMe" className="text-sm font-normal text-zinc-600">
                   Remember me
@@ -119,10 +120,15 @@ export default function LoginPage() {
               <Button type="submit" className="w-full" disabled={loading}>
                 {loading ? "Signing in..." : "Sign In"}
               </Button>
-              <div className="flex items-center gap-4 text-left">
-                <span className="text-sm text-zinc-500">Forgot password?</span>
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center text-left">
                 <a
                   href="mailto:support@nexus.agency?subject=Password%20Reset%20Request"
+                  className="text-sm text-zinc-500 hover:text-zinc-700 underline"
+                >
+                  Forgot password?
+                </a>
+                <a
+                  href="mailto:support@nexus.agency?subject=Support%20Request"
                   className="text-sm text-zinc-500 hover:text-zinc-700 underline"
                 >
                   Contact support

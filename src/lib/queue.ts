@@ -1,22 +1,20 @@
-import { Queue, Job } from 'bullmq';
-import Redis from 'ioredis';
+import { Queue, Job, ConnectionOptions } from 'bullmq';
 
 /**
- * Redis connection singleton for BullMQ
+ * Redis connection options for BullMQ
  * maxRetriesPerRequest: null is required for BullMQ compatibility
  */
-export const redis = new Redis(
-  process.env.REDIS_URL || 'redis://localhost:6379',
-  {
-    maxRetriesPerRequest: null,
-  }
-);
+export const redisConnection: ConnectionOptions = {
+  host: process.env.REDIS_HOST || 'localhost',
+  port: parseInt(process.env.REDIS_PORT || '6379', 10),
+  maxRetriesPerRequest: null,
+};
 
 /**
  * Generation queue for content generation jobs
  */
 export const generationQueue = new Queue('generation', {
-  connection: redis,
+  connection: redisConnection,
 });
 
 /**
