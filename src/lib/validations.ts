@@ -165,16 +165,6 @@ export const createContentAssetSchema = z.object({
   metadata: z.record(z.string(), z.unknown()).optional(),
 });
 
-// Manual content asset creation (POST, not via generation job)
-export const createManualContentAssetSchema = z.object({
-  clientId: uuidSchema,
-  projectId: uuidSchema.optional(),
-  type: z.nativeEnum(ContentAssetType),
-  fileUrl: z.string().min(1, 'File URL is required'),
-  thumbnailUrl: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
-});
-
 export const updateContentAssetSchema = createContentAssetSchema.partial().omit({
   clientId: true,
   version: true,
@@ -295,21 +285,32 @@ export type Sort = z.infer<typeof sortSchema>;
 export type Filter = z.infer<typeof filterSchema>;
 
 // =============================================================================
-// PROMPT TEMPLATE SCHEMAS
+// BRAND PROFILE SCHEMAS
 // =============================================================================
 
-export const createPromptSchema = z.object({
-  pipelineId: uuidSchema.optional(),
-  contentType: z.string().min(1, 'Content type is required').max(100, 'Content type must be at most 100 characters'),
-  body: z.string().min(1, 'Prompt body is required').max(50000, 'Prompt body must be at most 50000 characters'),
-  category: z.string().optional(),
-  performanceNotes: z.string().optional(),
-  abNotes: z.string().optional(),
+const urlStringSchema = z.string().min(1, 'URL cannot be empty');
+const urlArraySchema = z.array(urlStringSchema).max(20, 'Maximum 20 URLs allowed').optional();
+
+export const createBrandProfileSchema = z.object({
+  clientId: uuidSchema,
+  colors: z.record(z.string(), z.unknown()).optional(),
+  typography: z.record(z.string(), z.unknown()).optional(),
+  toneOfVoice: z.string().optional(),
+  targetAudience: z.string().optional(),
+  exampleUrls: urlArraySchema,
+  styleRefUrls: urlArraySchema,
+  characterSheets: z.record(z.string(), z.unknown()).optional(),
 });
 
-export const updatePromptSchema = createPromptSchema.partial().extend({
-  isActive: z.boolean().optional(),
+export const updateBrandProfileSchema = z.object({
+  colors: z.record(z.string(), z.unknown()).optional(),
+  typography: z.record(z.string(), z.unknown()).optional(),
+  toneOfVoice: z.string().optional(),
+  targetAudience: z.string().optional(),
+  exampleUrls: urlArraySchema,
+  styleRefUrls: urlArraySchema,
+  characterSheets: z.record(z.string(), z.unknown()).optional(),
 });
 
-export type CreatePrompt = z.infer<typeof createPromptSchema>;
-export type UpdatePrompt = z.infer<typeof updatePromptSchema>;
+export type CreateBrandProfile = z.infer<typeof createBrandProfileSchema>;
+export type UpdateBrandProfile = z.infer<typeof updateBrandProfileSchema>;
