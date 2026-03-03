@@ -51,7 +51,7 @@ const modules = [
     name: "Content Engine",
     icon: Palette,
     href: "/content-engine",
-    comingSoon: true,
+    comingSoon: false,
   },
   {
     name: "Proposals",
