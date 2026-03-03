@@ -171,6 +171,11 @@ export const updateContentAssetSchema = createContentAssetSchema.partial().omit(
   version: true,
 });
 
+// Create manual content asset (without generationJobId)
+export const createManualContentAssetSchema = createContentAssetSchema.omit({
+  generationJobId: true,
+});
+
 // Update internal status (team only)
 export const updateInternalStatusSchema = z.object({
   internalStatus: z.nativeEnum(InternalStatus),
