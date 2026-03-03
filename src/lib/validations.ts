@@ -283,3 +283,23 @@ export type FileUploadResponse = z.infer<typeof fileUploadResponseSchema>;
 export type Pagination = z.infer<typeof paginationSchema>;
 export type Sort = z.infer<typeof sortSchema>;
 export type Filter = z.infer<typeof filterSchema>;
+
+// =============================================================================
+// PROMPT TEMPLATE SCHEMAS
+// =============================================================================
+
+export const createPromptSchema = z.object({
+  pipelineId: uuidSchema.optional(),
+  contentType: z.string().min(1, 'Content type is required').max(100, 'Content type must be at most 100 characters'),
+  body: z.string().min(1, 'Prompt body is required').max(50000, 'Prompt body must be at most 50000 characters'),
+  category: z.string().optional(),
+  performanceNotes: z.string().optional(),
+  abNotes: z.string().optional(),
+});
+
+export const updatePromptSchema = createPromptSchema.partial().extend({
+  isActive: z.boolean().optional(),
+});
+
+export type CreatePrompt = z.infer<typeof createPromptSchema>;
+export type UpdatePrompt = z.infer<typeof updatePromptSchema>;
