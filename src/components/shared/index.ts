@@ -6,3 +6,4 @@ export { ConfirmDialog } from "./confirm-dialog";
 export { ActivityFeed, type Activity } from "./activity-feed";
 export { CommentThread, type Comment } from "./comment-thread";
 export { FileUploader } from "./file-uploader";
+export { TriggerJobModal } from "./trigger-job-modal";
