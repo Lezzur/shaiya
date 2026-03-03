@@ -11,6 +11,7 @@ import {
   ClientStatus,
   CommentEntityType,
   ActivityModule,
+  PipelineStatus,
 } from '@/generated/prisma';
 
 /**
@@ -261,6 +262,29 @@ export const filterSchema = z.object({
 });
 
 // =============================================================================
+// PIPELINE SCHEMAS
+// =============================================================================
+
+export const createPipelineSchema = z.object({
+  name: z.string().min(1, 'Pipeline name is required').max(200, 'Pipeline name must be 200 characters or less'),
+  type: z.string().min(1, 'Pipeline type is required'),
+  webhookUrl: z.string().url('Webhook URL must be a valid URL').refine(
+    (url) => url.startsWith('http://') || url.startsWith('https://'),
+    'Webhook URL must start with http:// or https://'
+  ),
+  config: z.record(z.string(), z.unknown()).optional(),
+  status: z.nativeEnum(PipelineStatus).default(PipelineStatus.ACTIVE),
+});
+
+export const updatePipelineSchema = createPipelineSchema.partial();
+
+export const triggerPipelineSchema = z.object({
+  clientId: uuidSchema,
+  brandProfileId: uuidSchema,
+  params: z.record(z.string(), z.unknown()),
+});
+
+// =============================================================================
 // TYPE EXPORTS (inferred from schemas)
 // =============================================================================
 
@@ -283,34 +307,6 @@ export type FileUploadResponse = z.infer<typeof fileUploadResponseSchema>;
 export type Pagination = z.infer<typeof paginationSchema>;
 export type Sort = z.infer<typeof sortSchema>;
 export type Filter = z.infer<typeof filterSchema>;
-
-// =============================================================================
-// BRAND PROFILE SCHEMAS
-// =============================================================================
-
-const urlStringSchema = z.string().min(1, 'URL cannot be empty');
-const urlArraySchema = z.array(urlStringSchema).max(20, 'Maximum 20 URLs allowed').optional();
-
-export const createBrandProfileSchema = z.object({
-  clientId: uuidSchema,
-  colors: z.record(z.string(), z.unknown()).optional(),
-  typography: z.record(z.string(), z.unknown()).optional(),
-  toneOfVoice: z.string().optional(),
-  targetAudience: z.string().optional(),
-  exampleUrls: urlArraySchema,
-  styleRefUrls: urlArraySchema,
-  characterSheets: z.record(z.string(), z.unknown()).optional(),
-});
-
-export const updateBrandProfileSchema = z.object({
-  colors: z.record(z.string(), z.unknown()).optional(),
-  typography: z.record(z.string(), z.unknown()).optional(),
-  toneOfVoice: z.string().optional(),
-  targetAudience: z.string().optional(),
-  exampleUrls: urlArraySchema,
-  styleRefUrls: urlArraySchema,
-  characterSheets: z.record(z.string(), z.unknown()).optional(),
-});
-
-export type CreateBrandProfile = z.infer<typeof createBrandProfileSchema>;
-export type UpdateBrandProfile = z.infer<typeof updateBrandProfileSchema>;
+export type CreatePipeline = z.infer<typeof createPipelineSchema>;
+export type UpdatePipeline = z.infer<typeof updatePipelineSchema>;
+export type TriggerPipeline = z.infer<typeof triggerPipelineSchema>;
