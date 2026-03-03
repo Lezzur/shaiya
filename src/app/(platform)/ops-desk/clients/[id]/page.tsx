@@ -13,7 +13,6 @@ import {
   Mail,
   Calendar,
 } from "lucide-react";
-import { PageHeader } from "@/components/shared/page-header";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { MetricCard } from "@/components/shared/metric-card";
 import { EmptyState } from "@/components/shared/empty-state";
@@ -23,8 +22,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatCurrency, formatDate } from "@/lib/format";
-import { getHealthStatus, getProjectStatus, getInvoiceStatus } from "@/lib/constants";
-import { HealthStatus, ProjectStatus, InvoiceStatus } from "@/generated/prisma";
+import { getHealthStatus, getProjectStatus } from "@/lib/constants";
+import { HealthStatus, ProjectStatus } from "@/generated/prisma";
 
 interface PrimaryContact {
   id: string;

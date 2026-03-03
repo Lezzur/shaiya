@@ -4,7 +4,7 @@ import { UserRole } from '@/generated/prisma';
 
 type RouteHandler = (
   req: NextRequest,
-  context?: { params?: Record<string, string> }
+  context?: { params?: Promise<Record<string, string>> }
 ) => Promise<NextResponse> | NextResponse;
 
 interface WithAuthOptions {

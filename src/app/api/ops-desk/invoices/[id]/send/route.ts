@@ -3,11 +3,10 @@ import { db } from '@/lib/db';
 import { withAuth, getRequiredSession } from '@/lib/auth-guard';
 import { createPaymentLink } from '@/lib/paymongo';
 import { logActivity } from '@/lib/activity';
-import { UserRole, InvoiceStatus, ActivityModule } from '@/generated/prisma';
-import { Decimal } from '@/generated/prisma/runtime/library';
+import { UserRole, InvoiceStatus, ActivityModule, Prisma } from '@/generated/prisma';
 
 interface RouteContext {
-  params?: Promise<{ id: string }>;
+  params?: Promise<Record<string, string>>;
 }
 
 /**
@@ -65,7 +64,7 @@ export const POST = withAuth(
 
       // Convert amount to centavos (PHP * 100)
       const amountInCentavos = Math.round(
-        (invoice.amount instanceof Decimal
+        (invoice.amount instanceof Prisma.Decimal
           ? invoice.amount.toNumber()
           : Number(invoice.amount)) * 100
       );

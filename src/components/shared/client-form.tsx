@@ -4,7 +4,6 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { createClientSchema } from "@/lib/validations";
 import { HealthStatus } from "@/generated/prisma";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -44,8 +43,8 @@ const clientFormSchema = z.object({
   logo: z.string().url().optional().or(z.literal("")),
   industry: z.string().optional(),
   packageTier: z.string().optional(),
-  monthlyValue: z.coerce.number().min(0).default(0),
-  healthStatus: z.nativeEnum(HealthStatus).default(HealthStatus.HEALTHY),
+  monthlyValue: z.coerce.number().min(0),
+  healthStatus: z.nativeEnum(HealthStatus),
   renewalDate: z.string().optional(),
 });
 
@@ -68,7 +67,8 @@ export function ClientForm({
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
 
   const form = useForm<ClientFormValues>({
-    resolver: zodResolver(clientFormSchema),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    resolver: zodResolver(clientFormSchema) as any,
     defaultValues: {
       name: defaultValues?.name || "",
       logo: defaultValues?.logo || "",
@@ -129,7 +129,7 @@ export function ClientForm({
         <FormField
           control={form.control}
           name="logo"
-          render={({ field }) => (
+          render={() => (
             <FormItem>
               <FormLabel>Logo</FormLabel>
               <FormControl>

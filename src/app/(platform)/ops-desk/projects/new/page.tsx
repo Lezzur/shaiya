@@ -2,7 +2,6 @@
 
 import { useState, useEffect, FormEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -110,7 +109,7 @@ export default function NewProjectPage() {
     setIsSubmitting(true);
 
     try {
-      const payload: any = {
+      const payload: Record<string, unknown> = {
         title: title.trim(),
         clientId,
         status,
@@ -249,15 +248,15 @@ export default function NewProjectPage() {
           <div className="space-y-2">
             <Label htmlFor="assignedTo">Assigned To</Label>
             <Select
-              value={assignedToId}
-              onValueChange={setAssignedToId}
+              value={assignedToId || "unassigned"}
+              onValueChange={(value) => setAssignedToId(value === "unassigned" ? "" : value)}
               disabled={isLoadingTeam || isSubmitting}
             >
               <SelectTrigger id="assignedTo">
                 <SelectValue placeholder="Select team member (optional)" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Unassigned</SelectItem>
+                <SelectItem value="unassigned">Unassigned</SelectItem>
                 {teamMembers.map((member) => (
                   <SelectItem key={member.id} value={member.id}>
                     {member.name}

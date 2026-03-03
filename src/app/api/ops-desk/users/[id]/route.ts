@@ -9,9 +9,13 @@ import { UserRole } from '@/generated/prisma';
  * Protected: ADMIN, TEAM
  */
 export const GET = withAuth(
-  async (req: NextRequest, { params }: { params: { id: string } }) => {
+  async (req: NextRequest, context?: { params?: Promise<Record<string, string>> }) => {
     try {
-      const userId = params.id;
+      const userId = (await context?.params)?.id;
+
+      if (!userId) {
+        return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
+      }
 
       const user = await db.user.findUnique({
         where: {

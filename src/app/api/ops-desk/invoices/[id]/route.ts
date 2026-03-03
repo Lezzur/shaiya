@@ -7,7 +7,7 @@ import { UserRole, InvoiceStatus, ActivityModule } from '@/generated/prisma';
 import { z } from 'zod';
 
 interface RouteContext {
-  params?: Promise<{ id: string }>;
+  params?: Promise<Record<string, string>>;
 }
 
 /**
@@ -188,7 +188,7 @@ export const PATCH = withAuth(
     } catch (error) {
       if (error instanceof z.ZodError) {
         return NextResponse.json(
-          { error: 'Validation failed', details: error.errors },
+          { error: 'Validation failed', details: error.issues },
           { status: 400 }
         );
       }

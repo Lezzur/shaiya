@@ -2,7 +2,12 @@ import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 
 export default async function Home() {
-  const session = await auth();
+  let session;
+  try {
+    session = await auth();
+  } catch {
+    redirect("/login");
+  }
 
   // Not authenticated - redirect to login
   if (!session?.user) {

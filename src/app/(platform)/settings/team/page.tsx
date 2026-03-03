@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
-import { UserPlus, Copy, Check, X } from "lucide-react";
+import { UserPlus, Copy, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -172,7 +172,7 @@ export default function SettingsTeamPage() {
               Invite Team Member
             </CardTitle>
             <CardDescription>
-              Send an invitation to add a new team member. They'll receive a temporary password.
+              Send an invitation to add a new team member. They&apos;ll receive a temporary password.
             </CardDescription>
           </CardHeader>
           <CardContent>

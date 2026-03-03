@@ -6,7 +6,7 @@ import { logActivity } from '@/lib/activity';
 import { ActivityModule } from '@/generated/prisma';
 
 interface RouteContext {
-  params?: Promise<{ id: string }>;
+  params?: Promise<Record<string, string>>;
 }
 
 /**

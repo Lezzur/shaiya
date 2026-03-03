@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Plus } from "lucide-react";
+import { Plus, AlertCircle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -117,22 +117,6 @@ export default function InvoicesPage() {
     setSummary({ totalOutstanding, totalPaidThisMonth });
   };
 
-  const getStatusColor = (status: InvoiceStatus): string => {
-    switch (status) {
-      case InvoiceStatus.DRAFT_I:
-        return "gray";
-      case InvoiceStatus.SENT_I:
-        return "blue";
-      case InvoiceStatus.PAID:
-        return "green";
-      case InvoiceStatus.OVERDUE:
-        return "red";
-      case InvoiceStatus.CANCELLED:
-        return "gray";
-      default:
-        return "gray";
-    }
-  };
 
   const getStatusLabel = (status: InvoiceStatus): string => {
     const statusConfig = INVOICE_STATUSES.find((s) => s.value === status);
@@ -223,7 +207,19 @@ export default function InvoicesPage() {
   if (error) {
     return (
       <div className="container mx-auto p-6">
-        <div className="text-center text-red-600">{error}</div>
+        <div className="flex flex-col items-center justify-center py-16 text-center">
+          <div className="rounded-full bg-muted p-3 mb-4">
+            <AlertCircle className="h-6 w-6 text-muted-foreground" />
+          </div>
+          <h3 className="text-lg font-semibold mb-1">Unable to load invoices</h3>
+          <p className="text-sm text-muted-foreground mb-4">
+            Something went wrong while fetching your invoices. Please try again.
+          </p>
+          <Button variant="outline" size="sm" onClick={() => { setError(null); fetchInvoices(); }}>
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Retry
+          </Button>
+        </div>
       </div>
     );
   }

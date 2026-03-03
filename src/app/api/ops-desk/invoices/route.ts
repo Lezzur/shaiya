@@ -83,7 +83,7 @@ export const GET = withAuth(
     } catch (error) {
       if (error instanceof z.ZodError) {
         return NextResponse.json(
-          { error: 'Invalid parameters', details: error.errors },
+          { error: 'Invalid parameters', details: error.issues },
           { status: 400 }
         );
       }
@@ -187,7 +187,7 @@ export const POST = withAuth(
     } catch (error) {
       if (error instanceof z.ZodError) {
         return NextResponse.json(
-          { error: 'Validation failed', details: error.errors },
+          { error: 'Validation failed', details: error.issues },
           { status: 400 }
         );
       }

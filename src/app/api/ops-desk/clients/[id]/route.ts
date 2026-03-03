@@ -6,18 +6,21 @@ import { updateClientSchema } from '@/lib/validations';
 import { UserRole, ActivityModule, HealthStatus, InvoiceStatus } from '@/generated/prisma';
 import { auth } from '@/lib/auth';
 
-type RouteContext = { params: Promise<{ id: string }> };
-
 /**
  * GET /api/ops-desk/clients/[id]
  * Get single client by ID with related data
  * Protected: ADMIN, TEAM roles
  */
 export const GET = withAuth(
-  async (req: NextRequest, context?: { params?: Record<string, string> }) => {
+  async (_req: NextRequest, context?: { params?: Promise<Record<string, string>> }) => {
     try {
-      const params = await (context as RouteContext).params;
-      const { id } = params;
+      const id = (await context?.params)?.id;
+      if (!id) {
+        return NextResponse.json(
+          { error: 'BadRequest', message: 'Client ID is required' },
+          { status: 400 }
+        );
+      }
 
       // Fetch client with related data
       const client = await db.client.findUnique({
@@ -77,8 +80,8 @@ export const GET = withAuth(
         ).length,
       };
 
-      // Structure response
-      const { invoices, ...clientData } = client;
+      // Structure response (destructure invoices to exclude from response)
+      const { invoices: _invoices, ...clientData } = client;
       const response = {
         ...clientData,
         invoiceSummary,
@@ -102,10 +105,15 @@ export const GET = withAuth(
  * Protected: ADMIN role only
  */
 export const PATCH = withAuth(
-  async (req: NextRequest, context?: { params?: Record<string, string> }) => {
+  async (req: NextRequest, context?: { params?: Promise<Record<string, string>> }) => {
     try {
-      const params = await (context as RouteContext).params;
-      const { id } = params;
+      const id = (await context?.params)?.id;
+      if (!id) {
+        return NextResponse.json(
+          { error: 'BadRequest', message: 'Client ID is required' },
+          { status: 400 }
+        );
+      }
 
       const body = await req.json();
 
@@ -115,7 +123,7 @@ export const PATCH = withAuth(
         return NextResponse.json(
           {
             error: 'ValidationError',
-            message: validationResult.error.errors[0].message,
+            message: validationResult.error.issues[0].message,
           },
           { status: 400 }
         );
@@ -180,10 +188,15 @@ export const PATCH = withAuth(
  * Protected: ADMIN role only
  */
 export const DELETE = withAuth(
-  async (req: NextRequest, context?: { params?: Record<string, string> }) => {
+  async (_req: NextRequest, context?: { params?: Promise<Record<string, string>> }) => {
     try {
-      const params = await (context as RouteContext).params;
-      const { id } = params;
+      const id = (await context?.params)?.id;
+      if (!id) {
+        return NextResponse.json(
+          { error: 'BadRequest', message: 'Client ID is required' },
+          { status: 400 }
+        );
+      }
 
       // Check if client exists
       const existing = await db.client.findUnique({ where: { id } });

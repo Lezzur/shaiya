@@ -12,7 +12,7 @@ export default function NewClientPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = async (data: any) => {
+  const handleSubmit = async (data: Record<string, unknown>) => {
     setIsLoading(true);
     try {
       // Prepare the data for API submission
@@ -24,7 +24,7 @@ export default function NewClientPage() {
         monthlyValue: data.monthlyValue || 0,
         lifetimeValue: 0,
         healthStatus: data.healthStatus,
-        renewalDate: data.renewalDate ? new Date(data.renewalDate).toISOString() : undefined,
+        renewalDate: data.renewalDate ? new Date(data.renewalDate as string).toISOString() : undefined,
       };
 
       const response = await fetch("/api/ops-desk/clients", {

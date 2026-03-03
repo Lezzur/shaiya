@@ -26,8 +26,6 @@ interface CommentThreadProps {
 export function CommentThread({
   comments,
   onSubmit,
-  entityType,
-  entityId,
   className,
   placeholder = "Add a comment...",
 }: CommentThreadProps) {

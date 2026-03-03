@@ -1,21 +1,13 @@
 import NextAuth from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
-import Nodemailer from 'next-auth/providers/nodemailer';
 import bcrypt from 'bcryptjs';
 import { db } from './db';
 import { UserRole } from '@/generated/prisma';
+import { authConfig } from './auth.config';
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
-  // No adapter needed - we use JWT strategy with custom User table
-  session: {
-    strategy: 'jwt',
-  },
-  pages: {
-    signIn: '/login',
-    error: '/login',
-  },
+  ...authConfig,
   providers: [
-    // Credentials provider for email + password (internal users: ADMIN, TEAM)
     Credentials({
       id: 'credentials',
       name: 'Credentials',
@@ -30,6 +22,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
         const email = credentials.email as string;
         const password = credentials.password as string;
+        const rememberMe = credentials.rememberMe === "true";
 
         const user = await db.user.findUnique({
           where: { email },
@@ -44,7 +37,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           return null;
         }
 
-        // Check password hash
         if (!user.passwordHash) {
           return null;
         }
@@ -60,46 +52,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           name: user.name,
           role: user.role,
           clientId: user.clientId,
+          rememberMe,
         };
       },
     }),
-
-    // Email provider for magic link (client users) - stub configuration
-    Nodemailer({
-      id: 'magic-link',
-      name: 'Magic Link',
-      server: {
-        host: process.env.EMAIL_SERVER_HOST,
-        port: Number(process.env.EMAIL_SERVER_PORT) || 587,
-        auth: {
-          user: process.env.EMAIL_SERVER_USER,
-          pass: process.env.EMAIL_SERVER_PASSWORD,
-        },
-      },
-      from: process.env.EMAIL_FROM || 'noreply@example.com',
-      // This provider will be used for CLIENT role users via magic link
-    }),
+    // TODO: Add Nodemailer provider for magic link when email is configured
   ],
-  callbacks: {
-    async jwt({ token, user }) {
-      if (user) {
-        token.id = user.id;
-        token.role = user.role;
-        token.clientId = user.clientId;
-      }
-      return token;
-    },
-    async session({ session, token }) {
-      if (token) {
-        session.user.id = token.id;
-        session.user.role = token.role;
-        session.user.clientId = token.clientId;
-      }
-      return session;
-    },
-    async authorized() {
-      // Return true for all - we handle authorization in middleware
-      return true;
-    },
-  },
 });

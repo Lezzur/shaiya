@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Mail, Briefcase, Target, Tag } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -73,7 +73,7 @@ export default function TeamMemberDetailPage() {
       if (response.ok) {
         const data = await response.json();
         setActivities(
-          data.map((a: any) => ({
+          data.map((a: { id: string; actor: { name: string }; module: string; action: string; entityType: string; entityId: string; timestamp: string; metadata: Record<string, unknown> }) => ({
             id: a.id,
             actor: a.actor.name,
             module: a.module,

@@ -33,7 +33,7 @@ import { CommentThread } from "@/components/shared/comment-thread";
 import { ActivityFeed } from "@/components/shared/activity-feed";
 import { FileUploader } from "@/components/shared/file-uploader";
 import { formatDate, formatDuration, getInitials } from "@/lib/format";
-import { PROJECT_STATUSES, DELIVERABLE_STATUSES, getProjectStatus } from "@/lib/constants";
+import { PROJECT_STATUSES, getProjectStatus } from "@/lib/constants";
 import { ProjectStatus, DeliverableStatus } from "@/generated/prisma";
 import type { Activity } from "@/components/shared/activity-feed";
 import type { Comment } from "@/components/shared/comment-thread";
@@ -101,6 +101,14 @@ export default function ProjectDetailPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Inline edit state
+  const [isEditing, setIsEditing] = useState(false);
+  const [editTitle, setEditTitle] = useState("");
+  const [editDeadline, setEditDeadline] = useState("");
+  const [editAssignedToId, setEditAssignedToId] = useState("");
+  const [teamMembers, setTeamMembers] = useState<Array<{ id: string; name: string }>>([]);
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
+
   // Brief editing state
   const [isEditingBrief, setIsEditingBrief] = useState(false);
   const [briefValue, setBriefValue] = useState("");
@@ -137,7 +145,7 @@ export default function ProjectDetailPage() {
       if (response.ok) {
         const data = await response.json();
         setActivities(
-          data.map((a: any) => ({
+          data.map((a: { id: string; actor: { name: string }; module: string; action: string; entityType: string; entityId: string; timestamp: string; metadata: Record<string, unknown> }) => ({
             id: a.id,
             actor: a.actor.name,
             module: a.module,
@@ -186,10 +194,78 @@ export default function ProjectDetailPage() {
     }
   };
 
+  const fetchTeamMembers = async () => {
+    try {
+      const response = await fetch("/api/ops-desk/team");
+      if (response.ok) {
+        const data = await response.json();
+        setTeamMembers(data || []);
+      }
+    } catch (err) {
+      console.error("Failed to fetch team members:", err);
+    }
+  };
+
+  const startEditing = () => {
+    if (!project) return;
+    setEditTitle(project.title);
+    setEditDeadline(project.deadline ? project.deadline.split("T")[0] : "");
+    setEditAssignedToId(project.assignedTo?.id || "");
+    fetchTeamMembers();
+    setIsEditing(true);
+  };
+
+  const cancelEditing = () => {
+    setIsEditing(false);
+  };
+
+  const saveEdit = async () => {
+    if (!project || !editTitle.trim()) return;
+    setIsSavingEdit(true);
+    try {
+      const payload: Record<string, unknown> = {
+        title: editTitle.trim(),
+      };
+      if (editDeadline) {
+        payload.deadline = new Date(editDeadline).toISOString();
+      } else {
+        payload.deadline = null;
+      }
+      if (editAssignedToId) {
+        payload.assignedToId = editAssignedToId;
+      } else {
+        payload.assignedToId = null;
+      }
+
+      const response = await fetch(`/api/ops-desk/projects/${projectId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!response.ok) throw new Error("Failed to save changes");
+      await fetchProject();
+      await fetchActivities();
+      setIsEditing(false);
+    } catch (err) {
+      console.error("Failed to save project:", err);
+    } finally {
+      setIsSavingEdit(false);
+    }
+  };
+
   const toggleDeliverableStatus = async (deliverableId: string, currentStatus: DeliverableStatus) => {
+    if (!project) return;
     const newStatus = currentStatus === DeliverableStatus.DONE_D
       ? DeliverableStatus.PENDING_D
       : DeliverableStatus.DONE_D;
+
+    // Optimistic update: reflect the change immediately in the UI
+    setProject({
+      ...project,
+      deliverables: project.deliverables.map((d) =>
+        d.id === deliverableId ? { ...d, status: newStatus } : d
+      ),
+    });
 
     try {
       const response = await fetch(`/api/ops-desk/deliverables/${deliverableId}`, {
@@ -197,9 +273,23 @@ export default function ProjectDetailPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: newStatus }),
       });
-      if (!response.ok) throw new Error("Failed to update deliverable");
-      await fetchProject();
+      if (!response.ok) {
+        // Revert on failure
+        setProject({
+          ...project,
+          deliverables: project.deliverables.map((d) =>
+            d.id === deliverableId ? { ...d, status: currentStatus } : d
+          ),
+        });
+      }
     } catch (err) {
+      // Revert on error
+      setProject({
+        ...project,
+        deliverables: project.deliverables.map((d) =>
+          d.id === deliverableId ? { ...d, status: currentStatus } : d
+        ),
+      });
       console.error("Failed to update deliverable:", err);
     }
   };
@@ -214,15 +304,18 @@ export default function ProjectDetailPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           projectId: project.id,
-          title: newDeliverableTitle,
-          status: DeliverableStatus.PENDING_D,
+          title: newDeliverableTitle.trim(),
         }),
       });
-      if (!response.ok) throw new Error("Failed to add deliverable");
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || "Failed to add deliverable");
+      }
       await fetchProject();
       setNewDeliverableTitle("");
     } catch (err) {
       console.error("Failed to add deliverable:", err);
+      setError(err instanceof Error ? err.message : "Failed to add deliverable");
     } finally {
       setIsAddingDeliverable(false);
     }
@@ -351,7 +444,15 @@ export default function ProjectDetailPage() {
             >
               <ArrowLeft className="h-4 w-4" />
             </Button>
-            <h1 className="text-3xl font-bold">{project.title}</h1>
+            {isEditing ? (
+              <Input
+                value={editTitle}
+                onChange={(e) => setEditTitle(e.target.value)}
+                className="text-3xl font-bold h-auto py-1 px-2"
+              />
+            ) : (
+              <h1 className="text-3xl font-bold">{project.title}</h1>
+            )}
           </div>
           <div className="flex items-center gap-3 ml-12">
             <Link
@@ -363,10 +464,21 @@ export default function ProjectDetailPage() {
             <StatusBadge status={statusConfig?.label || project.status} />
           </div>
         </div>
-        <Button variant="outline" size="sm">
-          <Edit className="h-4 w-4 mr-2" />
-          Edit
-        </Button>
+        {isEditing ? (
+          <div className="flex gap-2">
+            <Button size="sm" onClick={saveEdit} disabled={isSavingEdit}>
+              {isSavingEdit ? "Saving..." : "Save"}
+            </Button>
+            <Button variant="outline" size="sm" onClick={cancelEditing} disabled={isSavingEdit}>
+              Cancel
+            </Button>
+          </div>
+        ) : (
+          <Button variant="outline" size="sm" onClick={startEditing}>
+            <Edit className="h-4 w-4 mr-2" />
+            Edit
+          </Button>
+        )}
       </div>
 
       {/* Info Bar */}
@@ -375,14 +487,40 @@ export default function ProjectDetailPage() {
           <div className="flex items-center gap-2">
             <Calendar className="h-4 w-4 text-muted-foreground" />
             <span className="text-sm font-medium">Deadline:</span>
-            <span className={`text-sm ${getDeadlineColor(project.deadline)}`}>
-              {project.deadline ? formatDate(project.deadline) : "Not set"}
-            </span>
+            {isEditing ? (
+              <Input
+                type="date"
+                value={editDeadline}
+                onChange={(e) => setEditDeadline(e.target.value)}
+                className="h-8 w-[160px]"
+              />
+            ) : (
+              <span className={`text-sm ${getDeadlineColor(project.deadline)}`}>
+                {project.deadline ? formatDate(project.deadline) : "Not set"}
+              </span>
+            )}
           </div>
           <div className="flex items-center gap-2">
             <User className="h-4 w-4 text-muted-foreground" />
             <span className="text-sm font-medium">Assigned to:</span>
-            {project.assignedTo ? (
+            {isEditing ? (
+              <Select
+                value={editAssignedToId || "unassigned"}
+                onValueChange={(value) => setEditAssignedToId(value === "unassigned" ? "" : value)}
+              >
+                <SelectTrigger className="h-8 w-[180px]">
+                  <SelectValue placeholder="Select team member" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="unassigned">Unassigned</SelectItem>
+                  {teamMembers.map((member) => (
+                    <SelectItem key={member.id} value={member.id}>
+                      {member.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : project.assignedTo ? (
               <div className="flex items-center gap-2">
                 <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center">
                   {project.assignedTo.avatar ? (
@@ -578,6 +716,7 @@ export default function ProjectDetailPage() {
                   }}
                 />
                 <Button
+                  type="button"
                   onClick={addDeliverable}
                   disabled={!newDeliverableTitle.trim() || isAddingDeliverable}
                 >

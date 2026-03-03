@@ -26,7 +26,7 @@ const uuidSchema = z.string().uuid();
 const emailSchema = z.string().email();
 const urlSchema = z.string().url();
 const dateSchema = z.coerce.date();
-const positiveNumberSchema = z.number().positive();
+const _positiveNumberSchema = z.number().positive();
 const nonNegativeNumberSchema = z.number().min(0);
 
 // =============================================================================

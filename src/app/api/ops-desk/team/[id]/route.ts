@@ -11,10 +11,10 @@ import { UserRole } from '@/generated/prisma';
 export const GET = withAuth(
   async (
     _req: NextRequest,
-    context?: { params?: Record<string, string> }
+    context?: { params?: Promise<Record<string, string>> }
   ) => {
     try {
-      const id = context?.params?.id;
+      const id = (await context?.params)?.id;
 
       if (!id) {
         return NextResponse.json(
@@ -91,10 +91,10 @@ export const GET = withAuth(
 export const PATCH = withAuth(
   async (
     req: NextRequest,
-    context?: { params?: Record<string, string> }
+    context?: { params?: Promise<Record<string, string>> }
   ) => {
     try {
-      const id = context?.params?.id;
+      const id = (await context?.params)?.id;
 
       if (!id) {
         return NextResponse.json(

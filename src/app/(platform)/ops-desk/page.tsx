@@ -4,7 +4,7 @@ import { ProjectStatus, InvoiceStatus, HealthStatus, ActivityModule } from "@/ge
 import { MetricCard } from "@/components/shared/metric-card";
 import { ActivityFeed, Activity } from "@/components/shared/activity-feed";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { formatCurrency, formatDate } from "@/lib/format";
+import { formatCurrency } from "@/lib/format";
 import { differenceInDays } from "date-fns";
 
 // Project status colors for the bar chart

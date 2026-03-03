@@ -1,11 +1,5 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { DataTable } from "@/components/shared/data-table";
-import { StatusBadge } from "@/components/shared/status-badge";
-import { formatCurrency, formatDate } from "@/lib/format";
-import { getHealthStatus } from "@/lib/constants";
-import { HealthStatus } from "@/generated/prisma";
-import { ColumnDef } from "@tanstack/react-table";
 import {
   Select,
   SelectContent,
@@ -14,150 +8,50 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { PlusCircle } from "lucide-react";
-
-interface Client {
-  id: string;
-  name: string;
-  industry: string | null;
-  packageTier: string | null;
-  monthlyValue: number;
-  healthStatus: HealthStatus;
-  renewalDate: Date | null;
-  _count: {
-    projects: number;
-  };
-}
+import { HealthStatus, Prisma } from "@/generated/prisma";
+import { db } from "@/lib/db";
+import { ClientsTable } from "./clients-table";
 
 async function getClients(searchParams: {
   search?: string;
   healthStatus?: string;
-}): Promise<{ data: Client[] }> {
-  const params = new URLSearchParams();
-
-  if (searchParams.search) {
-    params.append("search", searchParams.search);
-  }
-
-  if (searchParams.healthStatus && searchParams.healthStatus !== "all") {
-    params.append("healthStatus", searchParams.healthStatus);
-  }
-
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-  const url = `${baseUrl}/api/ops-desk/clients?${params.toString()}`;
-
+}) {
   try {
-    const res = await fetch(url, {
-      cache: "no-store",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
+    const where: Prisma.ClientWhereInput = {};
 
-    if (!res.ok) {
-      throw new Error("Failed to fetch clients");
+    if (searchParams.search) {
+      where.name = { contains: searchParams.search, mode: "insensitive" };
     }
 
-    return res.json();
+    if (searchParams.healthStatus && searchParams.healthStatus !== "all") {
+      where.healthStatus = searchParams.healthStatus as HealthStatus;
+    }
+
+    const clients = await db.client.findMany({
+      where,
+      include: {
+        _count: { select: { projects: true } },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    return {
+      data: clients.map((c) => ({
+        id: c.id,
+        name: c.name,
+        industry: c.industry,
+        packageTier: c.packageTier,
+        monthlyValue: Number(c.monthlyValue),
+        healthStatus: c.healthStatus,
+        renewalDate: c.renewalDate ? c.renewalDate.toISOString() : null,
+        _count: c._count,
+      })),
+    };
   } catch (error) {
     console.error("Error fetching clients:", error);
     return { data: [] };
   }
 }
-
-function isRenewalSoon(renewalDate: Date | null): boolean {
-  if (!renewalDate) return false;
-  const date = new Date(renewalDate);
-  const now = new Date();
-  const diffTime = date.getTime() - now.getTime();
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-  return diffDays <= 30 && diffDays >= 0;
-}
-
-const columns: ColumnDef<Client>[] = [
-  {
-    accessorKey: "name",
-    header: "Name",
-    cell: ({ row }) => {
-      return (
-        <Link
-          href={`/ops-desk/clients/${row.original.id}`}
-          className="font-medium text-zinc-900 hover:underline"
-        >
-          {row.getValue("name")}
-        </Link>
-      );
-    },
-  },
-  {
-    accessorKey: "industry",
-    header: "Industry",
-    cell: ({ row }) => {
-      const industry = row.getValue("industry") as string | null;
-      return <span className="text-zinc-600">{industry || "—"}</span>;
-    },
-  },
-  {
-    accessorKey: "packageTier",
-    header: "Package Tier",
-    cell: ({ row }) => {
-      const tier = row.getValue("packageTier") as string | null;
-      return <span className="text-zinc-600">{tier || "—"}</span>;
-    },
-  },
-  {
-    accessorKey: "monthlyValue",
-    header: "Monthly Value",
-    cell: ({ row }) => {
-      const value = row.getValue("monthlyValue") as number;
-      return (
-        <span className="font-medium text-zinc-900">
-          {formatCurrency(value)}
-        </span>
-      );
-    },
-  },
-  {
-    accessorKey: "healthStatus",
-    header: "Health Status",
-    cell: ({ row }) => {
-      const status = row.getValue("healthStatus") as HealthStatus;
-      const statusConfig = getHealthStatus(status);
-
-      return (
-        <StatusBadge
-          status={statusConfig?.label || status}
-          variant="health"
-        />
-      );
-    },
-  },
-  {
-    accessorKey: "_count.projects",
-    header: "Projects",
-    cell: ({ row }) => {
-      const count = row.original._count.projects;
-      return <span className="text-zinc-600">{count}</span>;
-    },
-  },
-  {
-    accessorKey: "renewalDate",
-    header: "Renewal Date",
-    cell: ({ row }) => {
-      const renewalDate = row.getValue("renewalDate") as Date | null;
-      if (!renewalDate) {
-        return <span className="text-zinc-400">—</span>;
-      }
-
-      const isUpcoming = isRenewalSoon(renewalDate);
-
-      return (
-        <span className={isUpcoming ? "font-medium text-red-600" : "text-zinc-600"}>
-          {formatDate(renewalDate)}
-        </span>
-      );
-    },
-  },
-];
 
 export default async function ClientsPage({
   searchParams,
@@ -217,12 +111,7 @@ export default async function ClientsPage({
       </div>
 
       {/* Table */}
-      <DataTable
-        columns={columns}
-        data={clients}
-        searchKey="name"
-        searchPlaceholder="Search clients..."
-      />
+      <ClientsTable data={clients} />
     </div>
   );
 }

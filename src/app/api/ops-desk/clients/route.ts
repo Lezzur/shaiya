@@ -115,7 +115,7 @@ export const POST = withAuth(
         return NextResponse.json(
           {
             error: 'ValidationError',
-            message: validationResult.error.errors[0].message,
+            message: validationResult.error.issues[0].message,
           },
           { status: 400 }
         );
