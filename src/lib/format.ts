@@ -5,19 +5,19 @@ import { format, formatDistanceToNow, parseISO } from 'date-fns';
  */
 
 /**
- * Format a number as currency (USD with 2 decimal places)
+ * Format a number as currency (PHP with 2 decimal places)
  *
  * @param amount - The amount to format
  * @returns Formatted currency string
  *
  * @example
- * formatCurrency(1234.56) // "$1,234.56"
- * formatCurrency(1000000) // "$1,000,000.00"
+ * formatCurrency(1234.56) // "₱1,234.56"
+ * formatCurrency(1000000) // "₱1,000,000.00"
  */
 export function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat('en-US', {
+  return new Intl.NumberFormat('en-PH', {
     style: 'currency',
-    currency: 'USD',
+    currency: 'PHP',
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(amount);

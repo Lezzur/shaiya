@@ -309,6 +309,22 @@ export const updateBrandProfileSchema = createBrandProfileSchema.partial().omit(
 });
 
 // =============================================================================
+// MODEL REGISTRY SCHEMAS
+// =============================================================================
+
+export const createModelSchema = z.object({
+  name: z.string().min(1, 'Model name is required').max(200, 'Model name must be 200 characters or less'),
+  provider: z.string().min(1, 'Provider is required'),
+  endpoint: z.string().url('Endpoint must be a valid URL').optional().or(z.literal('')),
+  costPerUnit: nonNegativeNumberSchema,
+  unitType: z.string().min(1, 'Unit type is required'),
+  qualityBenchmark: z.number().min(0, 'Quality must be at least 0').max(1, 'Quality must be at most 1').optional(),
+  isActive: z.boolean().default(true),
+});
+
+export const updateModelSchema = createModelSchema.partial();
+
+// =============================================================================
 // TYPE EXPORTS (inferred from schemas)
 // =============================================================================
 
@@ -336,3 +352,5 @@ export type UpdatePipeline = z.infer<typeof updatePipelineSchema>;
 export type TriggerPipeline = z.infer<typeof triggerPipelineSchema>;
 export type CreateBrandProfile = z.infer<typeof createBrandProfileSchema>;
 export type UpdateBrandProfile = z.infer<typeof updateBrandProfileSchema>;
+export type CreateModel = z.infer<typeof createModelSchema>;
+export type UpdateModel = z.infer<typeof updateModelSchema>;
