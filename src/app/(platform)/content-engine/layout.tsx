@@ -3,43 +3,23 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { LayoutDashboard, Users, Zap, FileCode, ListTodo, Image, DollarSign } from "lucide-react";
+import { FileText, Layers, UserCircle } from "lucide-react";
 
 const subNavItems = [
   {
-    name: "Overview",
-    href: "/content-engine",
-    icon: LayoutDashboard,
+    name: "Prompt Library",
+    href: "/content-engine/prompt-library",
+    icon: FileText,
   },
   {
     name: "Brand Profiles",
     href: "/content-engine/brand-profiles",
-    icon: Users,
+    icon: UserCircle,
   },
   {
-    name: "Pipelines",
-    href: "/content-engine/pipelines",
-    icon: Zap,
-  },
-  {
-    name: "Prompt Library",
-    href: "/content-engine/prompt-library",
-    icon: FileCode,
-  },
-  {
-    name: "Queue",
-    href: "/content-engine/queue",
-    icon: ListTodo,
-  },
-  {
-    name: "Gallery",
-    href: "/content-engine/gallery",
-    icon: Image,
-  },
-  {
-    name: "Cost Tracker",
-    href: "/content-engine/cost-tracker",
-    icon: DollarSign,
+    name: "Assets",
+    href: "/content-engine/assets",
+    icon: Layers,
   },
 ];
 
@@ -57,7 +37,8 @@ export default function ContentEngineLayout({
         <nav className="flex gap-6 px-1">
           {subNavItems.map((item) => {
             const Icon = item.icon;
-            const isActive = pathname === item.href || pathname?.startsWith(`${item.href}/`);
+            const isActive =
+              pathname === item.href || pathname?.startsWith(`${item.href}/`);
 
             return (
               <Link
