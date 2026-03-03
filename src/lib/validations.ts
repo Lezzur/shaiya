@@ -11,7 +11,6 @@ import {
   ClientStatus,
   CommentEntityType,
   ActivityModule,
-  PipelineStatus,
 } from '@/generated/prisma';
 
 /**
@@ -262,29 +261,6 @@ export const filterSchema = z.object({
 });
 
 // =============================================================================
-// PIPELINE SCHEMAS
-// =============================================================================
-
-export const createPipelineSchema = z.object({
-  name: z.string().min(1, 'Pipeline name is required').max(200, 'Pipeline name must be 200 characters or less'),
-  type: z.string().min(1, 'Pipeline type is required'),
-  webhookUrl: z.string().url('Webhook URL must be a valid URL').refine(
-    (url) => url.startsWith('http://') || url.startsWith('https://'),
-    'Webhook URL must start with http:// or https://'
-  ),
-  config: z.record(z.string(), z.unknown()).optional(),
-  status: z.nativeEnum(PipelineStatus).default(PipelineStatus.ACTIVE),
-});
-
-export const updatePipelineSchema = createPipelineSchema.partial();
-
-export const triggerPipelineSchema = z.object({
-  clientId: uuidSchema,
-  brandProfileId: uuidSchema,
-  params: z.record(z.string(), z.unknown()),
-});
-
-// =============================================================================
 // TYPE EXPORTS (inferred from schemas)
 // =============================================================================
 
@@ -307,6 +283,54 @@ export type FileUploadResponse = z.infer<typeof fileUploadResponseSchema>;
 export type Pagination = z.infer<typeof paginationSchema>;
 export type Sort = z.infer<typeof sortSchema>;
 export type Filter = z.infer<typeof filterSchema>;
-export type CreatePipeline = z.infer<typeof createPipelineSchema>;
-export type UpdatePipeline = z.infer<typeof updatePipelineSchema>;
-export type TriggerPipeline = z.infer<typeof triggerPipelineSchema>;
+
+// =============================================================================
+// PROMPT TEMPLATE SCHEMAS
+// =============================================================================
+
+export const createPromptSchema = z.object({
+  pipelineId: uuidSchema.optional(),
+  contentType: z.string().min(1, 'Content type is required').max(100, 'Content type must be at most 100 characters'),
+  body: z.string().min(1, 'Prompt body is required').max(50000, 'Prompt body must be at most 50000 characters'),
+  category: z.string().optional(),
+  performanceNotes: z.string().optional(),
+  abNotes: z.string().optional(),
+});
+
+export const updatePromptSchema = createPromptSchema.partial().extend({
+  isActive: z.boolean().optional(),
+});
+
+export type CreatePrompt = z.infer<typeof createPromptSchema>;
+export type UpdatePrompt = z.infer<typeof updatePromptSchema>;
+
+// =============================================================================
+// MODEL REGISTRY SCHEMAS
+// =============================================================================
+
+const unitTypeEnum = z.enum(['token', 'image', 'second', 'request']);
+
+// Custom decimal validation that ensures the value is valid for Prisma Decimal
+const decimalSchema = z
+  .number()
+  .refine((val) => !isNaN(val) && isFinite(val), {
+    message: 'Must be a valid number',
+  });
+
+export const createModelSchema = z.object({
+  name: z.string().min(1, 'Model name is required'),
+  provider: z.string().min(1, 'Provider is required'),
+  endpoint: z.string().optional(),
+  costPerUnit: decimalSchema.min(0, 'Cost per unit must be non-negative'),
+  unitType: unitTypeEnum,
+  qualityBenchmark: decimalSchema
+    .min(0, 'Quality benchmark must be between 0.00 and 1.00')
+    .max(1, 'Quality benchmark must be between 0.00 and 1.00')
+    .optional(),
+  isActive: z.boolean().optional(),
+});
+
+export const updateModelSchema = createModelSchema.partial();
+
+export type CreateModel = z.infer<typeof createModelSchema>;
+export type UpdateModel = z.infer<typeof updateModelSchema>;
