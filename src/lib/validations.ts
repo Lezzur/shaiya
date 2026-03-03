@@ -165,6 +165,16 @@ export const createContentAssetSchema = z.object({
   metadata: z.record(z.string(), z.unknown()).optional(),
 });
 
+// Manual content asset creation (POST, not via generation job)
+export const createManualContentAssetSchema = z.object({
+  clientId: uuidSchema,
+  projectId: uuidSchema.optional(),
+  type: z.nativeEnum(ContentAssetType),
+  fileUrl: z.string().min(1, 'File URL is required'),
+  thumbnailUrl: z.string().optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
+});
+
 export const updateContentAssetSchema = createContentAssetSchema.partial().omit({
   clientId: true,
   version: true,
