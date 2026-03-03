@@ -99,6 +99,20 @@ enum InvoiceStatus {
   CANCELLED
 }
 
+enum PipelineStatus {
+  ACTIVE
+  INACTIVE
+  ERROR
+}
+
+enum GenerationJobStatus {
+  QUEUED
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
 // =============================================================================
 // CORE TABLES
 // =============================================================================
@@ -145,11 +159,13 @@ model Client {
   updatedAt        DateTime     @updatedAt @map("updated_at")
 
   // Relations
-  primaryContact User?          @relation("ClientPrimaryContact", fields: [primaryContactId], references: [id], onDelete: SetNull)
-  users          User[]         @relation("UserClient")
-  contentAssets  ContentAsset[] @relation("ClientContentAssets")
-  projects       Project[]      @relation("ClientProjects")
-  invoices       Invoice[]      @relation("ClientInvoices")
+  primaryContact User?           @relation("ClientPrimaryContact", fields: [primaryContactId], references: [id], onDelete: SetNull)
+  users          User[]          @relation("UserClient")
+  contentAssets  ContentAsset[]  @relation("ClientContentAssets")
+  projects       Project[]       @relation("ClientProjects")
+  invoices       Invoice[]       @relation("ClientInvoices")
+  brandProfile   BrandProfile?   @relation("ClientBrandProfile")
+  generationJobs GenerationJob[] @relation("ClientGenerationJobs")
 
   @@index([healthStatus])
   @@map("clients")
@@ -172,11 +188,12 @@ model ContentAsset {
   updatedAt       DateTime         @updatedAt @map("updated_at")
 
   // Relations
-  client       Client        @relation("ClientContentAssets", fields: [clientId], references: [id], onDelete: Cascade)
-  project      Project?      @relation("ProjectContentAssets", fields: [projectId], references: [id], onDelete: SetNull)
-  parentAsset  ContentAsset? @relation("AssetVersions", fields: [parentAssetId], references: [id], onDelete: SetNull)
-  childAssets  ContentAsset[] @relation("AssetVersions")
-  deliverables Deliverable[] @relation("DeliverableAsset")
+  client        Client         @relation("ClientContentAssets", fields: [clientId], references: [id], onDelete: Cascade)
+  project       Project?       @relation("ProjectContentAssets", fields: [projectId], references: [id], onDelete: SetNull)
+  generationJob GenerationJob? @relation("JobContentAssets", fields: [generationJobId], references: [id], onDelete: SetNull)
+  parentAsset   ContentAsset?  @relation("AssetVersions", fields: [parentAssetId], references: [id], onDelete: SetNull)
+  childAssets   ContentAsset[] @relation("AssetVersions")
+  deliverables  Deliverable[]  @relation("DeliverableAsset")
 
   @@index([clientId])
   @@index([internalStatus])
@@ -293,4 +310,128 @@ model Invoice {
   @@index([status])
   @@index([dueDate])
   @@map("invoices")
+}
+
+// =============================================================================
+// CONTENT ENGINE TABLES
+// =============================================================================
+
+model BrandProfile {
+  id              String   @id @default(uuid())
+  clientId        String   @unique @map("client_id")
+  colors          Json?
+  typography      Json?
+  toneOfVoice     String?  @map("tone_of_voice") @db.Text
+  targetAudience  String?  @map("target_audience") @db.Text
+  exampleUrls     String[] @map("example_urls")
+  styleRefUrls    String[] @map("style_ref_urls")
+  characterSheets Json?    @map("character_sheets")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  client         Client          @relation("ClientBrandProfile", fields: [clientId], references: [id], onDelete: Cascade)
+  generationJobs GenerationJob[] @relation("BrandProfileJobs")
+
+  @@index([clientId])
+  @@map("brand_profiles")
+}
+
+model Pipeline {
+  id             String         @id @default(uuid())
+  name           String
+  type           String
+  status         PipelineStatus @default(ACTIVE)
+  webhookUrl     String         @map("webhook_url")
+  config         Json?
+  lastRun        DateTime?      @map("last_run")
+  totalProcessed Int            @default(0) @map("total_processed")
+  createdAt      DateTime       @default(now()) @map("created_at")
+  updatedAt      DateTime       @updatedAt @map("updated_at")
+
+  // Relations
+  promptTemplates PromptTemplate[] @relation("PipelinePrompts")
+  generationJobs  GenerationJob[]  @relation("PipelineJobs")
+
+  @@index([status])
+  @@map("pipelines")
+}
+
+model PromptTemplate {
+  id               String   @id @default(uuid())
+  pipelineId       String?  @map("pipeline_id")
+  contentType      String   @map("content_type")
+  body             String   @db.Text
+  version          Int      @default(1)
+  performanceNotes String?  @map("performance_notes") @db.Text
+  abNotes          String?  @map("ab_notes") @db.Text
+  isActive         Boolean  @default(true) @map("is_active")
+  category         String?
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  pipeline Pipeline? @relation("PipelinePrompts", fields: [pipelineId], references: [id], onDelete: SetNull)
+
+  @@index([pipelineId])
+  @@map("prompt_templates")
+}
+
+model GenerationJob {
+  id              String              @id @default(uuid())
+  pipelineId      String              @map("pipeline_id")
+  clientId        String              @map("client_id")
+  brandProfileId  String              @map("brand_profile_id")
+  params          Json
+  status          GenerationJobStatus @default(QUEUED)
+  startedAt       DateTime?           @map("started_at")
+  completedAt     DateTime?           @map("completed_at")
+  totalCost       Decimal             @default(0) @map("total_cost") @db.Decimal(8, 4)
+  errorMessage    String?             @map("error_message") @db.Text
+  createdAt       DateTime            @default(now()) @map("created_at")
+
+  // Relations
+  pipeline      Pipeline       @relation("PipelineJobs", fields: [pipelineId], references: [id], onDelete: Cascade)
+  client        Client         @relation("ClientGenerationJobs", fields: [clientId], references: [id], onDelete: Cascade)
+  brandProfile  BrandProfile   @relation("BrandProfileJobs", fields: [brandProfileId], references: [id], onDelete: Cascade)
+  contentAssets ContentAsset[] @relation("JobContentAssets")
+  apiUsageLogs  ApiUsageLog[]  @relation("JobUsageLogs")
+
+  @@index([clientId, status])
+  @@map("generation_jobs")
+}
+
+model ModelRegistry {
+  id               String   @id @default(uuid())
+  name             String
+  provider         String
+  endpoint         String?
+  costPerUnit      Decimal  @map("cost_per_unit") @db.Decimal(10, 6)
+  unitType         String   @map("unit_type")
+  qualityBenchmark Decimal? @map("quality_benchmark") @db.Decimal(3, 2)
+  isActive         Boolean  @default(true) @map("is_active")
+
+  // Relations
+  apiUsageLogs ApiUsageLog[] @relation("ModelUsageLogs")
+
+  @@map("model_registry")
+}
+
+model ApiUsageLog {
+  id         String   @id @default(uuid())
+  jobId      String?  @map("job_id")
+  modelId    String?  @map("model_id")
+  modelName  String   @map("model_name")
+  tokensUsed Int?     @map("tokens_used")
+  cost       Decimal  @db.Decimal(8, 6)
+  timestamp  DateTime @default(now())
+  module     String
+
+  // Relations
+  job   GenerationJob? @relation("JobUsageLogs", fields: [jobId], references: [id], onDelete: SetNull)
+  model ModelRegistry? @relation("ModelUsageLogs", fields: [modelId], references: [id], onDelete: SetNull)
+
+  @@index([timestamp])
+  @@index([module])
+  @@map("api_usage_logs")
 }
