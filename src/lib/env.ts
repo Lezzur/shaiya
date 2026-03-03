@@ -16,6 +16,9 @@ const envSchema = z.object({
   DIRECT_DATABASE_URL: z.string().url().optional(),
   DATABASE_URL: z.string().url().optional(),
 
+  // Redis (BullMQ)
+  REDIS_URL: z.string().default('redis://localhost:6379'),
+
   // Cloudflare R2 (optional - only needed when using file storage)
   R2_ACCOUNT_ID: z.string().optional(),
   R2_ACCESS_KEY_ID: z.string().optional(),
@@ -187,4 +190,12 @@ export function isDevelopment(): boolean {
 export function isTest(): boolean {
   const env = getEnv();
   return env.NODE_ENV === 'test';
+}
+
+/**
+ * Get Redis URL for BullMQ
+ */
+export function getRedisUrl(): string {
+  const env = getEnv();
+  return env.REDIS_URL;
 }
